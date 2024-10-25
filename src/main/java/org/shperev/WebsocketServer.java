@@ -9,7 +9,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class WebsocketServer {
 
@@ -24,17 +23,25 @@ public class WebsocketServer {
     return new ServerSocket(PORT);
   }
 
-  public void accept(ServerSocket serverSocket) throws IOException, NoSuchAlgorithmException, ClassNotFoundException {
+  public void accept(ServerSocket serverSocket)
+      throws IOException, NoSuchAlgorithmException, ClassNotFoundException {
     Socket socket = serverSocket.accept();
-    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    BufferedReader bufferedReader =
+        new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-    String handShakeRequest = bufferedReader.lines().collect(Collectors.joining("\n"));
+    StringBuilder stringBuilder = new StringBuilder();
+    String inputLine;
+    while ((inputLine = bufferedReader.readLine()) != null && !inputLine.equals("")) {
+      stringBuilder.append(inputLine).append("\n");
+    }
+
+    String handShakeRequest = stringBuilder.toString();
 
     if (checkWebSocketHeaders(handShakeRequest)) {
       Matcher matcher = WEB_SOCKET_KEY_PATTERN.matcher(handShakeRequest);
       matcher.find();
 
-      String keyPlusMagicString = matcher.group(1) + WS_MAGIC_STRING;
+      String keyPlusMagicString = matcher.group(1).strip() + WS_MAGIC_STRING;
       MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
 
       byte[] digest = messageDigest.digest(keyPlusMagicString.getBytes("UTF-8"));
@@ -53,7 +60,11 @@ public class WebsocketServer {
       byte[] response = response1.getBytes("UTF-8");
 
       OutputStream outputStream = socket.getOutputStream();
+
       outputStream.write(response, 0, response.length);
+
+      bufferedReader.close();
+      outputStream.close();
     }
 
     // read from socket
@@ -66,7 +77,7 @@ public class WebsocketServer {
 
   private boolean checkWebSocketHeaders(String handShakeRequest) {
 
-    return GET_REQUEST_PATTERN.matcher(handShakeRequest).find() && WEB_SOCKET_KEY_PATTERN.matcher(handShakeRequest).find();
+    return GET_REQUEST_PATTERN.matcher(handShakeRequest).find()
+        && WEB_SOCKET_KEY_PATTERN.matcher(handShakeRequest).find();
   }
-
 }

@@ -7,6 +7,9 @@ import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class WebsocketServer {
 
@@ -14,28 +17,24 @@ public class WebsocketServer {
   public static final int PORT = 8081;
   public static final String WS_MAGIC_STRING = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-  public ServerSocket initiateSocketServer() throws IOException {
+  Pattern GET_REQUEST_PATTERN = Pattern.compile("^GET");
+  Pattern WEB_SOCKET_KEY_PATTERN = Pattern.compile("Sec-WebSocket-Key: (.*)");
 
+  public ServerSocket initiateSocketServer() throws IOException {
     return new ServerSocket(PORT);
   }
 
-  public void accept(ServerSocket serverSocket) throws IOException, NoSuchAlgorithmException {
+  public void accept(ServerSocket serverSocket) throws IOException, NoSuchAlgorithmException, ClassNotFoundException {
     Socket socket = serverSocket.accept();
-    BufferedReader bufferedReader =
-        new BufferedReader(new InputStreamReader(socket.getInputStream()));
-    String inputLine;
+    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-    Map<String, String> headers = new HashMap<>();
-    while ((inputLine = bufferedReader.readLine()) != null && !inputLine.equals("")) {
-      if (inputLine.contains(":")) {
-        String[] keyValuePair = inputLine.split(":");
-        headers.put(keyValuePair[0], keyValuePair[1]);
-      }
-    }
+    String handShakeRequest = bufferedReader.lines().collect(Collectors.joining("\n"));
 
-    if (headers.containsKey("Upgrade") && headers.get("Upgrade").strip().equals("websocket")) {
-      String key = headers.get("Sec-WebSocket-Key");
-      String keyPlusMagicString = key.strip() + WS_MAGIC_STRING;
+    if (checkWebSocketHeaders(handShakeRequest)) {
+      Matcher matcher = WEB_SOCKET_KEY_PATTERN.matcher(handShakeRequest);
+      matcher.find();
+
+      String keyPlusMagicString = matcher.group(1) + WS_MAGIC_STRING;
       MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
 
       byte[] digest = messageDigest.digest(keyPlusMagicString.getBytes("UTF-8"));
@@ -51,18 +50,6 @@ public class WebsocketServer {
               + "\r\n\r\n";
       System.out.println(response1);
 
-      ////
-      ////            objectOutputStream.writeObject(responseHeader);
-      //
-      //            String responseHeader = "HTTP/1.1 101 Switching Protocols\r\n"
-      //                    + "Connection: Upgrade\r\n"
-      //                    + "Upgrade: websocket\r\n"
-      //                    + "Sec-WebSocket-Accept: "
-      //                    + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-1")
-      //                    .digest((key.strip() +
-      // "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes("UTF-8")))
-      //                    + "\r\n\r\n";
-      //            System.out.println(responseHeader);
       byte[] response = response1.getBytes("UTF-8");
 
       OutputStream outputStream = socket.getOutputStream();
@@ -76,4 +63,10 @@ public class WebsocketServer {
   }
 
   private void createAcceptHeader() {}
+
+  private boolean checkWebSocketHeaders(String handShakeRequest) {
+
+    return GET_REQUEST_PATTERN.matcher(handShakeRequest).find() && WEB_SOCKET_KEY_PATTERN.matcher(handShakeRequest).find();
+  }
+
 }

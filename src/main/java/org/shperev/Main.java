@@ -6,7 +6,7 @@ import java.net.ServerSocket;
 import java.security.NoSuchAlgorithmException;
 
 public class Main {
-  public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
+  public static void main(String[] args) throws IOException, NoSuchAlgorithmException, ClassNotFoundException {
     WebsocketServer websocketServer = new WebsocketServer();
 
     ServerSocket serverSocket = websocketServer.initiateSocketServer();

@@ -4,6 +4,7 @@ package org.shperev;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -23,11 +24,10 @@ public class WebsocketServer {
     return new ServerSocket(PORT);
   }
 
-  public void accept(ServerSocket serverSocket)
-      throws IOException, NoSuchAlgorithmException, ClassNotFoundException {
+  public void accept(ServerSocket serverSocket) throws IOException, NoSuchAlgorithmException {
     Socket socket = serverSocket.accept();
     BufferedReader bufferedReader =
-        new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
 
     StringBuilder stringBuilder = new StringBuilder();
     String inputLine;
@@ -44,7 +44,7 @@ public class WebsocketServer {
       String keyPlusMagicString = matcher.group(1).strip() + WS_MAGIC_STRING;
       MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
 
-      byte[] digest = messageDigest.digest(keyPlusMagicString.getBytes("UTF-8"));
+      byte[] digest = messageDigest.digest(keyPlusMagicString.getBytes(StandardCharsets.UTF_8));
 
       String base64EncodedValue = Base64.getEncoder().encodeToString(digest);
 
@@ -57,7 +57,7 @@ public class WebsocketServer {
               + "\r\n\r\n";
       System.out.println(response1);
 
-      byte[] response = response1.getBytes("UTF-8");
+      byte[] response = response1.getBytes(StandardCharsets.UTF_8);
 
       OutputStream outputStream = socket.getOutputStream();
 
@@ -65,6 +65,8 @@ public class WebsocketServer {
 
       bufferedReader.close();
       outputStream.close();
+    } else {
+      // Todo response with 400 not support
     }
 
     // read from socket

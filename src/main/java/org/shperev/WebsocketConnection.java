@@ -17,8 +17,9 @@ public class WebsocketConnection {
 
     // check fin bit is zero for no continuation of payload
     boolean isFinBitOne = firstFrame.charAt(0) == '1';
-    String opCode = firstFrame.substring(4, 8);
-    boolean isOpCodeText = opCode.equals("0001");
+    int opCode =
+        (byte) unsignedFinByte & (byte) 15; // Apply bitwise & to represent opcode between 0 - 15
+    boolean isOpCodeText = opCode == 1;
 
     if (isFinBitOne & isOpCodeText) {
       int unsignedSecondFrame = Byte.toUnsignedInt(responseBytes[1]);

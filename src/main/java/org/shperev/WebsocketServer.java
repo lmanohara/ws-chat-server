@@ -24,8 +24,9 @@ public class WebsocketServer {
     return new ServerSocket(PORT);
   }
 
-  public void accept(ServerSocket serverSocket) throws IOException, NoSuchAlgorithmException {
+  public Socket accept(ServerSocket serverSocket) throws IOException, NoSuchAlgorithmException {
     Socket socket = serverSocket.accept();
+
     BufferedReader bufferedReader =
         new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
 
@@ -36,7 +37,7 @@ public class WebsocketServer {
     }
 
     String handShakeRequest = stringBuilder.toString();
-
+    System.out.println(handShakeRequest);
     if (checkWebSocketHeaders(handShakeRequest)) {
       Matcher matcher = WEB_SOCKET_KEY_PATTERN.matcher(handShakeRequest);
       matcher.find();
@@ -63,8 +64,8 @@ public class WebsocketServer {
 
       outputStream.write(response, 0, response.length);
 
-      bufferedReader.close();
-      outputStream.close();
+      //      bufferedReader.close();
+      //      outputStream.close();
     } else {
       // Todo response with 400 not support
     }
@@ -73,6 +74,8 @@ public class WebsocketServer {
     // get headers
     // validate headers
     // response handshake
+
+    return socket;
   }
 
   private void createAcceptHeader() {}

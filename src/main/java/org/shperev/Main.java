@@ -12,19 +12,21 @@ public class Main {
     WebsocketConnection websocketConnection = new WebsocketConnection();
     ServerSocket serverSocket = websocketServer.initiateSocketServer();
 
-    Socket socket;
-    socket = websocketServer.accept(serverSocket);
-
-    //      do{
-    //        websocketConnection.readMessage(socket);
-    //      } while (!socket.isClosed());
-    //      while (true){
-
     while (true) {
+      Socket socket = websocketServer.accept(serverSocket);
+      Runnable runnable =
+          () -> {
+            try {
+              while (true) {
+                websocketConnection.readMessage(socket);
+                websocketConnection.sendResponse(socket, "Hello from server!");
+              }
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          };
 
-      websocketConnection.readMessage(socket);
-      websocketConnection.sendResponse(socket, "Hello from server!");
+      Thread.ofVirtual().start(runnable);
     }
-    //      }
   }
 }

@@ -57,7 +57,14 @@ public class WebsocketConnection {
 
     byte[] messageInBytes = message.getBytes(StandardCharsets.UTF_8);
     outputStream.write(129);
-    outputStream.write((byte) messageInBytes.length);
+
+    int payloadLength = messageInBytes.length;
+    if (payloadLength >= 126 && payloadLength < 65536) {
+      payloadLength = 126;
+    } else if (payloadLength >= 65536) {
+      payloadLength = 127;
+    }
+    outputStream.write((byte) payloadLength);
     outputStream.write(messageInBytes);
 
     outputStream.flush();

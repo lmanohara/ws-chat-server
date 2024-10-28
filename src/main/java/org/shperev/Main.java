@@ -23,6 +23,7 @@ public class Main {
     while (true) {
 
       websocketConnection.readMessage(socket);
+      websocketConnection.sendResponse(socket, "Hello from server!");
     }
     //      }
   }

@@ -3,7 +3,9 @@ package org.shperev;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class WebsocketConnection {
@@ -50,5 +52,16 @@ public class WebsocketConnection {
       }
     }
     System.out.println(firstFrame);
+  }
+
+  public void sendResponse(Socket socket, String message) throws IOException {
+    OutputStream outputStream = socket.getOutputStream();
+
+    byte[] messageInBytes = message.getBytes(StandardCharsets.UTF_8);
+    outputStream.write(129);
+    outputStream.write((byte) messageInBytes.length);
+    outputStream.write(messageInBytes);
+
+    outputStream.flush();
   }
 }

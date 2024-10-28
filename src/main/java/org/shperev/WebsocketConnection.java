@@ -31,15 +31,11 @@ public class WebsocketConnection {
 
         int payloadLength = unsignedSecondFrame - 128;
         byte[] payload;
-        if (payloadLength == 126) {
-          payload = inputStream.readNBytes(2);
-          // read next 2 bytes
-        } else if (payloadLength == 127) {
-          // read next 8 bytes
-          payload = inputStream.readNBytes(8);
-        } else {
-          // read next bytes until the length
-          payload = inputStream.readNBytes(payloadLength);
+        switch (payloadLength) {
+          case 126 -> payload = inputStream.readNBytes(2); // read next 2 bytes
+          case 127 -> payload = inputStream.readNBytes(8); // read next 8 bytes
+          default ->
+              payload = inputStream.readNBytes(payloadLength); // read next bytes until the length
         }
 
         byte[] unmaskedBytes = new byte[payload.length];

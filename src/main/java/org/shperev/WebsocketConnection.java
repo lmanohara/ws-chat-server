@@ -6,40 +6,42 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 public class WebsocketConnection {
 
   public void readMessage(Socket socket) throws IOException {
     InputStream inputStream = socket.getInputStream();
-    byte[] responseBytes = new byte[1024];
-    inputStream.read(responseBytes);
-    int unsignedFinByte = Byte.toUnsignedInt(responseBytes[0]);
-    String firstFrame = Integer.toBinaryString(unsignedFinByte);
+
+    int firstFrame = Byte.toUnsignedInt((byte) inputStream.read());
+    int finBit = firstFrame & 128; // extract fin bit applying & masking
 
     // check fin bit is zero for no continuation of payload
-    boolean isFinBitOne = firstFrame.charAt(0) == '1';
+    boolean isFinBitOne = finBit == 128;
     int opCode =
-        (byte) unsignedFinByte & (byte) 15; // Apply bitwise & to represent opcode between 0 - 15
+        (byte) firstFrame & (byte) 15; // Apply bitwise & to represent opcode between 0 - 15
     boolean isOpCodeText = opCode == 1;
 
     if (isFinBitOne & isOpCodeText) {
-      int unsignedSecondFrame = Byte.toUnsignedInt(responseBytes[1]);
-      String secondFrameBits = Integer.toBinaryString(unsignedSecondFrame);
-      boolean isResponseMasked = secondFrameBits.charAt(0) == '1';
+      int unsignedSecondFrame = Byte.toUnsignedInt((byte) inputStream.read());
+      int maskBit = unsignedSecondFrame & 128;
+      boolean isResponseMasked = maskBit == 128;
       if (isResponseMasked) {
+        // read next 4 bytes for mask
+        byte[] maskBytes = inputStream.readNBytes(4);
 
         int payloadLength = unsignedSecondFrame - 128;
         byte[] payload;
         if (payloadLength == 126) {
-          payload = Arrays.copyOfRange(responseBytes, 6, 9);
+          payload = inputStream.readNBytes(2);
+          // read next 2 bytes
         } else if (payloadLength == 127) {
-          payload = Arrays.copyOfRange(responseBytes, 6, 15);
+          // read next 8 bytes
+          payload = inputStream.readNBytes(8);
         } else {
-          payload = Arrays.copyOfRange(responseBytes, 6, 6 + payloadLength);
+          // read next bytes until the length
+          payload = inputStream.readNBytes(payloadLength);
         }
 
-        byte[] maskBytes = Arrays.copyOfRange(responseBytes, 2, 6);
         byte[] unmaskedBytes = new byte[payload.length];
         for (int i = 0; i < payload.length; i++) {
           int maskingKeyIndex = i % 4;

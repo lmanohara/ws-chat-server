@@ -9,7 +9,6 @@ import java.security.NoSuchAlgorithmException;
 public class Main {
   public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
     WebsocketServer websocketServer = new WebsocketServer();
-    WebsocketConnection websocketConnection = new WebsocketConnection();
     ServerSocket serverSocket = websocketServer.initiateSocketServer();
 
     while (true) {
@@ -18,6 +17,7 @@ public class Main {
           () -> {
             try {
               while (true) {
+                WebsocketConnection websocketConnection = new WebsocketConnection();
                 websocketConnection.readMessage(socket);
                 websocketConnection.sendResponse(socket, "Hello from server!");
               }

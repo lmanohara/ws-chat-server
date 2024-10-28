@@ -29,7 +29,7 @@ public class Main {
           });
 
       WebsocketReadHandler websocketHandler = new WebsocketReadHandler(clients, socket, clientId);
-      websocketHandler.readMessage();
+      websocketHandler.readMessageAsync();
     }
   }
 }

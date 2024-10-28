@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class WebsocketReadHandler {
@@ -36,5 +37,22 @@ public class WebsocketReadHandler {
         };
 
     Thread.ofVirtual().start(runnable);
+  }
+
+  public void readMessageAsync() {
+    WebsocketConnection websocketConnection = new WebsocketConnection();
+    CompletableFuture.supplyAsync(
+            () -> {
+              try {
+                return websocketConnection.readMessage(receiver);
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            })
+        .thenAccept(
+            msg ->
+                clients.entrySet().stream()
+                    .filter(client -> !client.getKey().equals(clientId))
+                    .forEach(client -> client.getValue().accept(msg)));
   }
 }

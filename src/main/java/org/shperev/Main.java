@@ -5,28 +5,31 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public class Main {
   public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
     WebsocketServer websocketServer = new WebsocketServer();
     ServerSocket serverSocket = websocketServer.initiateSocketServer();
+    ConcurrentHashMap<UUID, Consumer<String>> clients = new ConcurrentHashMap<>();
 
     while (true) {
       Socket socket = websocketServer.accept(serverSocket);
-      Runnable runnable =
-          () -> {
+      UUID clientId = UUID.randomUUID();
+      clients.put(
+          clientId,
+          message -> {
             try {
-              while (true) {
-                WebsocketConnection websocketConnection = new WebsocketConnection();
-                websocketConnection.readMessage(socket);
-                websocketConnection.sendResponse(socket, "Hello from server!");
-              }
+              new ResponseWriter(socket).write(message);
             } catch (IOException e) {
               throw new RuntimeException(e);
             }
-          };
+          });
 
-      Thread.ofVirtual().start(runnable);
+      WebsocketReadHandler websocketHandler = new WebsocketReadHandler(clients, socket, clientId);
+      websocketHandler.readMessage();
     }
   }
 }

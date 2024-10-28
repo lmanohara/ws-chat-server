@@ -3,13 +3,11 @@ package org.shperev;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 
 public class WebsocketConnection {
 
-  public void readMessage(Socket socket) throws IOException {
+  public String readMessage(Socket socket) throws IOException {
     InputStream inputStream = socket.getInputStream();
 
     int firstFrame = Byte.toUnsignedInt((byte) inputStream.read());
@@ -46,27 +44,13 @@ public class WebsocketConnection {
                   (Byte.toUnsignedInt(maskBytes[maskingKeyIndex]) ^ Byte.toUnsignedInt(payload[i]));
         }
 
-        System.out.println(new String(unmaskedBytes));
+        String message = new String(unmaskedBytes);
+        System.out.println(message);
+
+        return message;
       }
     }
     System.out.println(firstFrame);
-  }
-
-  public void sendResponse(Socket socket, String message) throws IOException {
-    OutputStream outputStream = socket.getOutputStream();
-
-    byte[] messageInBytes = message.getBytes(StandardCharsets.UTF_8);
-    outputStream.write(129);
-
-    int payloadLength = messageInBytes.length;
-    if (payloadLength >= 126 && payloadLength < 65536) {
-      payloadLength = 126;
-    } else if (payloadLength >= 65536) {
-      payloadLength = 127;
-    }
-    outputStream.write((byte) payloadLength);
-    outputStream.write(messageInBytes);
-
-    outputStream.flush();
+    return "";
   }
 }

@@ -52,7 +52,7 @@ public class WebsocketReadHandler {
         .thenAccept(
             msg ->
                 clients.entrySet().stream()
-                    .filter(client -> !client.getKey().equals(clientId))
+                    //                    .filter(client -> !client.getKey().equals(clientId))
                     .forEach(client -> client.getValue().accept(msg)));
   }
 }

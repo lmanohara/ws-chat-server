@@ -8,6 +8,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,7 +22,7 @@ public class WebsocketServer {
   Pattern GET_REQUEST_PATTERN = Pattern.compile("^GET");
   Pattern WEB_SOCKET_KEY_PATTERN = Pattern.compile("Sec-WebSocket-Key: (.*)");
 
-  public ServerSocket initiateSocketServer() throws IOException {
+  private ServerSocket initiateSocketServer() throws IOException {
     return new ServerSocket(PORT);
   }
 
@@ -84,5 +86,27 @@ public class WebsocketServer {
 
     return GET_REQUEST_PATTERN.matcher(handShakeRequest).find()
         && WEB_SOCKET_KEY_PATTERN.matcher(handShakeRequest).find();
+  }
+
+  public void start() throws IOException, NoSuchAlgorithmException {
+    ServerSocket serverSocket = initiateSocketServer();
+    ConcurrentHashMap<UUID, Consumer<String>> clients = new ConcurrentHashMap<>();
+
+    while (true) {
+      Socket socket = accept(serverSocket);
+      UUID clientId = UUID.randomUUID();
+      clients.put(
+          clientId,
+          message -> {
+            try {
+              new ResponseWriter(socket).write(message);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          });
+
+      WebsocketReadHandler websocketHandler = new WebsocketReadHandler(clients, socket, clientId);
+      websocketHandler.readMessageAsync();
+    }
   }
 }

@@ -12,6 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebsocketServer {
 
@@ -21,6 +23,8 @@ public class WebsocketServer {
 
   Pattern GET_REQUEST_PATTERN = Pattern.compile("^GET");
   Pattern WEB_SOCKET_KEY_PATTERN = Pattern.compile("Sec-WebSocket-Key: (.*)");
+
+  private static final Logger log = LoggerFactory.getLogger(WebsocketServer.class);
 
   private ServerSocket initiateSocketServer() throws IOException {
     return new ServerSocket(PORT);
@@ -39,7 +43,8 @@ public class WebsocketServer {
     }
 
     String handShakeRequest = stringBuilder.toString();
-    System.out.println(handShakeRequest);
+    log.info(handShakeRequest);
+
     if (checkWebSocketHeaders(handShakeRequest)) {
       Matcher matcher = WEB_SOCKET_KEY_PATTERN.matcher(handShakeRequest);
       matcher.find();

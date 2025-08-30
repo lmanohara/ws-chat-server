@@ -4,8 +4,12 @@ package org.shperev;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebsocketConnection {
+
+  private static final Logger log = LoggerFactory.getLogger(WebsocketConnection.class);
 
   public String readMessage(Socket socket) throws IOException {
     InputStream inputStream = socket.getInputStream();
@@ -45,12 +49,11 @@ public class WebsocketConnection {
         }
 
         String message = new String(unmaskedBytes);
-        System.out.println(message);
+        log.info(message);
 
         return message;
       }
     }
-    System.out.println(firstFrame);
     return "";
   }
 }

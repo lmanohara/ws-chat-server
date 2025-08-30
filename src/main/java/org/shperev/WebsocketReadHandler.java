@@ -41,18 +41,18 @@ public class WebsocketReadHandler {
 
   public void readMessageAsync() {
     WebsocketConnection websocketConnection = new WebsocketConnection();
-    CompletableFuture.supplyAsync(
-            () -> {
-              try {
-                return websocketConnection.readMessage(receiver);
-              } catch (IOException e) {
-                throw new RuntimeException(e);
+    CompletableFuture.runAsync(
+        () -> {
+          try {
+            while (!receiver.isClosed()) {
+              String message = websocketConnection.readMessage(receiver);
+              if (message != null) {
+                clients.entrySet().stream().forEach(client -> client.getValue().accept(message));
               }
-            })
-        .thenAccept(
-            msg ->
-                clients.entrySet().stream()
-                    //                    .filter(client -> !client.getKey().equals(clientId))
-                    .forEach(client -> client.getValue().accept(msg)));
+            }
+          } catch (IOException ex) {
+            throw new RuntimeException("Error reading Websocket message", ex);
+          }
+        });
   }
 }

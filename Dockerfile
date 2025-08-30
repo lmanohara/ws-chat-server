@@ -21,7 +21,7 @@ FROM openjdk:23-jdk-slim
 WORKDIR /app
 
 # Copy the built JAR from the build stage
-COPY --from=build /app/build/libs/*.jar app.jar
+COPY --from=build /app/build/libs/app-1.0.0.jar app.jar
 
 # Expose port (adjust to your app)
 EXPOSE 8081

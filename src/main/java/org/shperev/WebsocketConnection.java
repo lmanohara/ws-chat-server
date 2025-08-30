@@ -12,6 +12,7 @@ public class WebsocketConnection {
   private static final Logger log = LoggerFactory.getLogger(WebsocketConnection.class);
 
   public String readMessage(Socket socket) throws IOException {
+    log.info("Reading frames from request");
     InputStream inputStream = socket.getInputStream();
 
     int firstFrame = Byte.toUnsignedInt((byte) inputStream.read());

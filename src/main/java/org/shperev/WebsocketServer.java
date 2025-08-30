@@ -94,12 +94,14 @@ public class WebsocketServer {
   }
 
   public void start() throws IOException, NoSuchAlgorithmException {
+    log.info("Websocket server started and listening to port {}", PORT);
     ServerSocket serverSocket = initiateSocketServer();
     ConcurrentHashMap<UUID, Consumer<String>> clients = new ConcurrentHashMap<>();
 
     while (true) {
       Socket socket = accept(serverSocket);
       UUID clientId = UUID.randomUUID();
+      log.info("New client join to the server with client id {}", clientId);
       clients.put(
           clientId,
           message -> {

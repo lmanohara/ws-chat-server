@@ -47,7 +47,7 @@ public class WebsocketReadHandler {
             while (!receiver.isClosed()) {
               String message = websocketConnection.readMessage(receiver);
               if (message != null) {
-                clients.entrySet().stream().forEach(client -> client.getValue().accept(message));
+                clients.forEach((key, value) -> value.accept(message));
               }
             }
           } catch (IOException ex) {

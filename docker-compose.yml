@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: websocket-server
     ports:
-      - "8081:8081"   # WebSocket server exposed on host:8080
+      - "8081:8081"   # WebSocket server exposed on host:8081
     restart: unless-stopped
 
   websocket-client:
@@ -16,5 +16,5 @@ services:
     volumes:
       - ./src/main/resources/static:/usr/share/nginx/html:ro
     ports:
-      - "80:80"     # Serve static client on http://localhost:8081
+      - "80:80"     # Serve static client on http://localhost:80
     restart: unless-stopped

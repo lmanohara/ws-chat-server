@@ -1,61 +1,161 @@
 <html>
 <head>
     <style>
-        #messages {
-            text-align: left;
-            width: 50%;
-            padding: 1em;
-            border: 1px solid black;
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            margin-top: 40px;
         }
 
+        .container {
+            width: 400px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #messages {
+            flex: 1;
+            height: 300px;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            overflow-y: auto;
+            font-size: 14px;
+        }
+
+        .input-fields {
+            display: flex;
+            padding: 10px;
+        }
+
+        #message {
+            flex: 1;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #send {
+            margin-left: 10px;
+            padding: 8px 12px;
+            font-size: 14px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #send:hover {
+            background-color: #45a049;
+        }
+
+        .system {
+            text-align: center;
+            font-style: italic;
+            color: gray;
+            margin: 5px 0;
+        }
+
+        .sent {
+            text-align: right;
+            margin: 5px 0;
+        }
+
+        .received {
+            text-align: left;
+            margin: 5px 0;
+        }
     </style>
-    <title>Sample WebSocket Client</title>
+    <title>Chat WebSocket Client</title>
 </head>
 <body>
 <div class="container">
     <div id="messages" class="messages"></div>
     <div class="input-fields">
-        <p>Type a message and hit send:</p>
-        <input id="message"/>
+        <input id="message" placeholder="Type your message..."/>
         <button id="send">Send</button>
     </div>
 </div>
 </body>
 <script>
     const messageWindow = document.getElementById("messages");
-
     const sendButton = document.getElementById("send");
     const messageInput = document.getElementById("message");
 
+    // Random color assigned once per client
+    const clientColor = getRandomColor();
+
+    // Update the WebSocket endpoint to match your server
     const socket = new WebSocket("ws://localhost:8081/socket");
     socket.binaryType = "arraybuffer";
 
-    socket.onopen = function (event) {
-        addMessageToWindow("Connected");
+    socket.onopen = function () {
+        addMessageToWindow("Connected to server", "system");
     };
 
     socket.onmessage = function (event) {
-        if (event.data instanceof ArrayBuffer) {
-            addMessageToWindow('Got Image:');
-            addImageToWindow(event.data);
-        } else {
-            addMessageToWindow(`Got Message: ${event.data}`);
-        }
+        addMessageToWindow(event.data, "received");
     };
 
-    sendButton.onclick = function (event) {
+    sendButton.onclick = function () {
         sendMessage(messageInput.value);
-        messageInput.value = "";
     };
+
+    // Allow pressing "Enter" to send
+    messageInput.addEventListener("keyup", function (event) {
+        if (event.key === "Enter") {
+            sendMessage(messageInput.value);
+        }
+    });
 
     function sendMessage(message) {
+        if (message.trim() === "") return;
         socket.send(message);
-        addMessageToWindow("Sent Message: " + message);
+        addMessageToWindow(message, "sent");
+        messageInput.value = "";
     }
 
-    function addMessageToWindow(message) {
-        messageWindow.innerHTML += `<div>${message}</div>`
+    function addMessageToWindow(message, type) {
+        const div = document.createElement("div");
+        div.className = type;
+        div.textContent = message;
+
+        // Apply colors dynamically
+        if (type === "sent") {
+            div.style.color = clientColor;
+        } else if (type === "received") {
+            div.style.color = "#"+intToRGB(hashCode(message)); // color based on msg hash
+        }
+
+        messageWindow.appendChild(div);
+        messageWindow.scrollTop = messageWindow.scrollHeight; // auto scroll
     }
 
+    function getRandomColor() {
+        const letters = "0123456789ABCDEF";
+        let color = "#";
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+
+    // Helper: consistent color for received messages (optional)
+    function hashCode(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return hash;
+    }
+
+    function intToRGB(i) {
+        const c = (i & 0x00FFFFFF).toString(16).toUpperCase();
+        return "00000".substring(0, 6 - c.length) + c;
+    }
 </script>
 </html>

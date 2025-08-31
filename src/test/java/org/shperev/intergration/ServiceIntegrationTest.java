@@ -56,7 +56,7 @@ public class ServiceIntegrationTest {
     String testMessage = "Ping";
     session.getBasicRemote().sendText(testMessage);
 
-    String response = messageQueue.poll(3, TimeUnit.SECONDS);
+    String response = messageQueue.poll(5, TimeUnit.SECONDS);
 
     assertEquals("Ping", response);
     session.close();

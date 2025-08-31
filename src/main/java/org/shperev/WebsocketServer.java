@@ -1,15 +1,18 @@
 /* (C)2024 */
 package org.shperev;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
+import java.util.Base64;
+import java.util.UUID;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -20,11 +23,9 @@ public class WebsocketServer {
   public static final String HOST = "";
   public static final int PORT = 8081;
   public static final String WS_MAGIC_STRING = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-
+  private static final Logger log = LoggerFactory.getLogger(WebsocketServer.class);
   Pattern GET_REQUEST_PATTERN = Pattern.compile("^GET");
   Pattern WEB_SOCKET_KEY_PATTERN = Pattern.compile("Sec-WebSocket-Key: (.*)");
-
-  private static final Logger log = LoggerFactory.getLogger(WebsocketServer.class);
 
   private ServerSocket initiateSocketServer() throws IOException {
     return new ServerSocket(PORT);
@@ -96,25 +97,34 @@ public class WebsocketServer {
   public void start() throws IOException, NoSuchAlgorithmException {
     log.info("Websocket server started and listening to port {}", PORT);
     ServerSocket serverSocket = initiateSocketServer();
-    ConcurrentHashMap<UUID, Consumer<String>> clients = new ConcurrentHashMap<>();
+    ConcurrentHashMap<Session, BlockingQueue<String>> clients = new ConcurrentHashMap<>();
+    WebsocketAsyncMessageHandler websocketAsyncMessageHandler = new WebsocketAsyncMessageHandler();
 
     while (true) {
       Socket socket = accept(serverSocket);
       UUID clientId = UUID.randomUUID();
       log.info("New client join to the server with client id {}", clientId);
-      clients.put(
-          clientId,
-          message -> {
-            try {
-              new ResponseWriter(socket).write(message);
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
-          });
 
-      WebsocketAsyncMessageHandler websocketHandler =
-          new WebsocketAsyncMessageHandler(clients, socket, clientId);
-      websocketHandler.readMessageAsync();
+      BlockingQueue<String> queue = new LinkedBlockingQueue<>();
+      Session session = new Session(socket);
+      clients.put(session, queue);
+
+      websocketAsyncMessageHandler.readMessageAsync(clients, session);
+      websocketAsyncMessageHandler.writeMessageAsync(session, queue);
+
+      //      clients.put(
+      //          clientId,
+      //          message -> {
+      //            try {
+      //              new ResponseWriter(socket).write(message);
+      //            } catch (IOException e) {
+      //              throw new RuntimeException(e);
+      //            }
+      //          });
+      //
+      //      WebsocketAsyncMessageHandler websocketHandler =
+      //          new WebsocketAsyncMessageHandler(clients, socket, clientId);
+      //      websocketHandler.readMessageAsync();
     }
   }
 }

@@ -8,13 +8,7 @@ import java.nio.charset.StandardCharsets;
 
 public class ResponseWriter {
 
-  Socket socket;
-
-  public ResponseWriter(Socket socket) {
-    this.socket = socket;
-  }
-
-  public void write(String message) throws IOException {
+  public void write(Socket socket, String message) throws IOException {
     OutputStream outputStream = socket.getOutputStream();
 
     byte[] messageInBytes = message.getBytes(StandardCharsets.UTF_8);

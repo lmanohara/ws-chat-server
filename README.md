@@ -70,7 +70,9 @@ ws://localhost:8081/socket
 ## Sample Screenshots
 
 **Chat Client (Single User)**
-![Single User Chat](screenshots/single-user-chat-window.png)
+<div style="display: flex">
+    <img src="screenshots/single-user-chat-window.png" width="300">
+</div>
 
 **Chat Client (Multiple Users)**
 <div style="display: flex; gap: 10px;">

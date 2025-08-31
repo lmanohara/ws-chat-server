@@ -8,13 +8,14 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-public class WebsocketReadHandler {
+public class WebsocketAsyncMessageHandler {
 
   Map<UUID, Consumer<String>> clients;
   Socket receiver;
   UUID clientId;
 
-  public WebsocketReadHandler(Map<UUID, Consumer<String>> clients, Socket receiver, UUID clientId) {
+  public WebsocketAsyncMessageHandler(
+      Map<UUID, Consumer<String>> clients, Socket receiver, UUID clientId) {
     this.clients = clients;
     this.receiver = receiver;
     this.clientId = clientId;
@@ -25,7 +26,7 @@ public class WebsocketReadHandler {
         () -> {
           try {
             while (true) {
-              WebsocketConnection websocketConnection = new WebsocketConnection();
+              RequestReader websocketConnection = new RequestReader();
               String message = websocketConnection.readMessage(receiver);
               clients.entrySet().stream()
                   .filter(client -> !client.getKey().equals(clientId))
@@ -40,12 +41,12 @@ public class WebsocketReadHandler {
   }
 
   public void readMessageAsync() {
-    WebsocketConnection websocketConnection = new WebsocketConnection();
+    RequestReader requestReader = new RequestReader();
     CompletableFuture.runAsync(
         () -> {
           try {
             while (!receiver.isClosed()) {
-              String message = websocketConnection.readMessage(receiver);
+              String message = requestReader.readMessage(receiver);
               if (message != null) {
                 clients.forEach((key, value) -> value.accept(message));
               }
@@ -55,4 +56,6 @@ public class WebsocketReadHandler {
           }
         });
   }
+
+  public void writeMessageAsync() {}
 }

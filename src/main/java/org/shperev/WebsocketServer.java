@@ -112,7 +112,8 @@ public class WebsocketServer {
             }
           });
 
-      WebsocketReadHandler websocketHandler = new WebsocketReadHandler(clients, socket, clientId);
+      WebsocketAsyncMessageHandler websocketHandler =
+          new WebsocketAsyncMessageHandler(clients, socket, clientId);
       websocketHandler.readMessageAsync();
     }
   }

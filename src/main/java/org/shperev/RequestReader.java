@@ -7,9 +7,9 @@ import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebsocketConnection {
+public class RequestReader {
 
-  private static final Logger log = LoggerFactory.getLogger(WebsocketConnection.class);
+  private static final Logger log = LoggerFactory.getLogger(RequestReader.class);
 
   public String readMessage(Socket socket) throws IOException {
     log.info("Reading frames from request");

@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
-import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -98,33 +97,19 @@ public class WebsocketServer {
     log.info("Websocket server started and listening to port {}", PORT);
     ServerSocket serverSocket = initiateSocketServer();
     ConcurrentHashMap<Session, BlockingQueue<String>> clients = new ConcurrentHashMap<>();
-    WebsocketAsyncMessageHandler websocketAsyncMessageHandler = new WebsocketAsyncMessageHandler();
+    WebsocketAsyncMessageHandler websocketAsyncMessageHandler =
+        new WebsocketAsyncMessageHandler(clients);
 
     while (true) {
       Socket socket = accept(serverSocket);
-      UUID clientId = UUID.randomUUID();
-      log.info("New client join to the server with client id {}", clientId);
 
       BlockingQueue<String> queue = new LinkedBlockingQueue<>();
       Session session = new Session(socket);
+      log.info("New client join to the server with client id {}", session.getClientId());
       clients.put(session, queue);
 
-      websocketAsyncMessageHandler.readMessageAsync(clients, session);
+      websocketAsyncMessageHandler.readMessageAsync(session);
       websocketAsyncMessageHandler.writeMessageAsync(session, queue);
-
-      //      clients.put(
-      //          clientId,
-      //          message -> {
-      //            try {
-      //              new ResponseWriter(socket).write(message);
-      //            } catch (IOException e) {
-      //              throw new RuntimeException(e);
-      //            }
-      //          });
-      //
-      //      WebsocketAsyncMessageHandler websocketHandler =
-      //          new WebsocketAsyncMessageHandler(clients, socket, clientId);
-      //      websocketHandler.readMessageAsync();
     }
   }
 }

@@ -2,6 +2,7 @@
 package org.shperev.intergration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.websocket.*;
 import java.io.IOException;
@@ -16,13 +17,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.shperev.WebsocketServer;
 
-@ClientEndpoint
 public class ServiceIntegrationTest {
 
-  private static BlockingQueue<String> messageQueue;
-
   @BeforeAll
-  static void startServer() throws IOException, NoSuchAlgorithmException {
+  static void startServer() {
     WebsocketServer websocketServer = new WebsocketServer();
     ExecutorService executorService = Executors.newSingleThreadExecutor();
     executorService.submit(
@@ -35,30 +33,62 @@ public class ServiceIntegrationTest {
             throw new RuntimeException(e);
           }
         });
-    messageQueue = new LinkedBlockingQueue<>();
+    try {
+      Thread.sleep(500); // wait for server to boot
+    } catch (InterruptedException ignored) {
+    }
   }
 
-  @OnOpen
-  public void onOpen(Session session) {
-    System.out.println("Connected to websocket server");
-  }
+  @ClientEndpoint
+  public static class TestClient {
+    private final BlockingQueue<String> messages = new LinkedBlockingQueue<>();
 
-  @OnMessage
-  public void onMessage(String message) {
-    messageQueue.offer(message);
+    @OnOpen
+    public void onOpen(Session session) {
+      System.out.println("Connected: " + session.getId());
+    }
+
+    @OnMessage
+    public void onMessage(String message) {
+      messages.offer(message);
+    }
+
+    public BlockingQueue<String> getMessages() {
+      return messages;
+    }
   }
 
   @Test
-  void testEchoMessage() throws DeploymentException, IOException, InterruptedException {
-    WebSocketContainer webSocketContainer = ContainerProvider.getWebSocketContainer();
-    Session session = webSocketContainer.connectToServer(this, URI.create("ws://localhost:8081"));
+  void testMessagePassingBetweenTwoClients()
+      throws DeploymentException, IOException, InterruptedException {
 
-    String testMessage = "Ping";
-    session.getBasicRemote().sendText(testMessage);
+    WebSocketContainer container = ContainerProvider.getWebSocketContainer();
 
-    String response = messageQueue.poll(5, TimeUnit.SECONDS);
+    // Create client1 and connect
+    TestClient client1 = new TestClient();
+    Session session1 = container.connectToServer(client1, URI.create("ws://localhost:8081"));
 
-    assertEquals("Ping", response);
-    session.close();
+    // Create client2 and connect
+    TestClient client2 = new TestClient();
+    Session session2 = container.connectToServer(client2, URI.create("ws://localhost:8081"));
+
+    // --- Send message from client1 -> expect client2 receives ---
+    String msg1 = "Hello from client1";
+    session1.getBasicRemote().sendText(msg1);
+
+    String receivedByClient2 = client2.getMessages().poll(5, TimeUnit.SECONDS);
+    assertNotNull(receivedByClient2, "Client2 should receive a message");
+    assertEquals(msg1, receivedByClient2);
+
+    // --- Send message from client2 -> expect client1 receives ---
+    String msg2 = "Hello back from client2";
+    session2.getBasicRemote().sendText(msg2);
+
+    String receivedByClient1 = client1.getMessages().poll(5, TimeUnit.SECONDS);
+    assertNotNull(receivedByClient1, "Client1 should receive a message");
+    assertEquals(msg2, receivedByClient1);
+
+    session1.close();
+    session2.close();
   }
 }
